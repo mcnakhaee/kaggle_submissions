@@ -1,0 +1,280 @@
+# This function transforms the select all that applies questions (wide) to a long format which is useful for data visualization
+make_long_df <- function(input_df, cols_id, values_to,id_name = 'id') {
+  df_tmp <- input_df %>%
+    rownames_to_column(var = id_name) %>%
+    pivot_longer(contains(cols_id),
+                 names_to = 'tmp',
+                 values_to = values_to) %>%
+    select(-tmp)
+  
+}
+
+# This function can calculate the median value of categorical variables such as compensation
+# The 
+median.ordered <- function(x)
+{
+  levs <- levels(x)
+  m <- median(as.integer(x))
+  if (floor(m) != m)
+  {
+    warning("Median is between two values; using the first one")
+    m <- floor(m)
+  }
+  ordered(m, labels = levs, levels = seq_along(levs))
+}
+
+
+activity <- 'Select any activities that make up an important part of your role at work:'
+nlp <- 'Which of the following natural language processing (NLP) methods do you use on a regular basis? '
+courses <- 'On which platforms have you begun or completed data science courses?'
+
+
+
+# This function prepares the data for visualization.
+#It takes a role_title such as data analyst and a column name corresponding to the select all that applies questions (e.g. Which of the following machine learning frameworks do you use on a regular basis?)
+# Then it computes the percentage of users with the given role_title that use a tool or an algorithm specified in the quesions
+# Input:
+# Output:
+
+get_summary_data <-function(input_data,role_title,question,items_vector='',n_items = 5,filter_ratio = 0.2){
+  
+  summary_data <- input_data %>%
+    select(
+      role,
+      starts_with(question)
+    ) %>%
+    mutate(n_participants = nrow(.)) %>%
+    group_by(role) %>%
+    mutate(n_participants_per_g = n()) %>%
+    ungroup() %>%
+    
+    make_long_df(question,
+                 'items') %>%
+    filter(!is.na(items),!str_detect(items, 'None'),!str_detect(items, 'Other'),!str_detect(items, 'nan')) %>%
+    group_by(items) %>%
+    mutate(avg_ratio = n() / mean(n_participants)) %>%
+    ungroup() %>%
+    group_by(role, items) %>%
+    
+    summarise(ratio = n() / mean(n_participants_per_g),
+              avg_ratio = mean(avg_ratio)) %>%
+    mutate(
+      if_bigger_than_average = ratio > avg_ratio,
+      label = if_else(if_bigger_than_average, 'higher', 'lower')
+    ) %>% 
+    filter(role == role_title) %>%
+    arrange(desc(ratio))%>%
+    filter(((ratio > avg_ratio) & (ratio >= 0.2))|(ratio>0.5)) %>% 
+    suppressMessages()
+  
+  if (length(items_vector)<2) 
+    
+    summary_data %>% 
+    slice_max(ratio ,n =n_items) 
+  else
+    summary_data %>%  filter(items %in% items_vector) %>% 
+    slice_max(ratio ,n =n_items) 
+}
+
+
+
+# This function creates video-game like bar charts for kaggle questions
+# Input
+create_power_bars <- function(input_data,fill_color='#2a9d8f',title = '',emoji_char = 'sword'){
+  # options(repr.plot.width=10, repr.plot.height=5,warn = -1)
+  options()
+  input_data %>%
+    ggplot(aes( x = fct_reorder(items,ratio))) +
+    geom_chicklet(aes(y = 1), fill = 'white') +
+    geom_col(aes(y = ratio),
+             alpha = 0.4,
+             width = 0.7,
+             fill = fill_color) +
+    geom_col(aes(y = avg_ratio),
+             alpha = 0.9,
+             width = 0.7,
+             fill = fill_color) +
+    geom_chicklet(aes(y = avg_ratio),
+                  colour = "#264653",fill = 'transparent',size= 2,width = 0.7,linetype = 'dotted') +
+    geom_chicklet(aes(y = 0.1),
+                  colour = "#264653",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.2),radius =  grid::unit(3, "pt"),
+                  colour = "#264653",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.3),radius =  grid::unit(3, "pt"),
+                  colour = "#264653",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.4),
+                  colour = "#264653",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.5),radius =  grid::unit(3, "pt"),
+                  colour = "#264653",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.6),radius =  grid::unit(3, "pt"),
+                  colour = "#264653",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.7),radius =  grid::unit(3, "pt"),
+                  colour = "#264653",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.8),radius =  grid::unit(3, "pt"),
+                  colour = "#264653",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.9),radius =  grid::unit(3, "pt"),
+                  colour = "#264653",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 1),radius =  grid::unit(3, "pt"),
+                  colour = "#264653",fill = 'transparent',size= 2,width = 0.7) +
+    geom_text(aes(y=1.07,label = round(100*ratio)),family = my_font,size = 13)+
+    geom_text(aes(y=1.17,label = round(100*(ratio-avg_ratio)),color = label),family = my_font,size = 12)+
+    scale_color_manual(values = c('lower'='#ef476f','higher'='#06d6a0'))+
+    labs(x = '',y ='',title = title)+
+    coord_flip() +
+    theme_void(base_family = my_font)  +
+    theme(
+      legend.position = 'none',
+      axis.title = element_text(family = my_font,hjust = 0.5,size = 50,margin = margin(b = 3)),#,aspect.ratio =1,
+      axis.line = element_blank(),
+      axis.ticks = element_blank(),
+      axis.text.x = element_blank(),
+      axis.text.y = element_text(size = 44,margin=grid::unit(c(0,0,0,0), "mm"),hjust = 1),
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      plot.background = element_rect(color = 'white',fill = 'white')) 
+  
+  
+}
+
+
+# This function assembles all the video-game bar charts into one plot
+patch_plots <- function(input_data,role_title,show_plot = FALSE) {
+  vis_data_programming_languages <-
+    get_summary_data(
+      input_data,
+      role_title,
+      "What programming languages do you use on a regular basis?",
+      n_items = 6,
+      items_vector = programming_languages
+    )
+  
+  vis_data_databases <-
+    get_summary_data(
+      input_data,
+      role_title,
+      "Do you use any of the following data products (relational databases, data warehouses, data lakes, or similar)?",
+      n_items = 6
+    )
+  
+  vis_data_ml_algorithm <-
+    get_summary_data(
+      input_data,
+      role_title,
+      "Which of the following ML algorithms do you use on a regular basis?",
+      n_items = 6,
+      items_vector = ml_algorithms,
+      #filter_ratio = 0
+    ) %>%   mutate(
+      items = recode(
+        items,
+        `Dense Neural Networks (MLPs, etc)` = 'Dense Neural Networks',
+        `Gradient Boosting Machines (xgboost, lightgbm, etc)` = 'Gradient Boosting Machines',
+        `Transformer Networks (BERT, gpt-3, etc)` = 'Transformer Networks'
+      )
+    )
+  
+  
+  vis_data_mlframework <-
+    get_summary_data(
+      input_data,
+      role_title,
+      'Which of the following machine learning frameworks do you use on a regular basis?',
+      n_items = 6
+    )
+  
+  
+  vis_data_ide <-
+    get_summary_data(input_data,
+                     role_title,
+                     'Which of the following integrated development environments',
+                     'IDE',
+                     filter_ratio = 0.0)
+  
+  
+  vis_data_vis <-
+    get_summary_data(
+      input_data,
+      role_title,
+      'Do you use any of the following data visualization libraries on a regular basis?',
+      items_vector = vis_libraries
+    ) %>%
+    mutate(items = recode(
+      items,
+      `Ggplot / ggplot2` = 'ggplot2',
+      `Plotly / Plotly Express` = 'Plotly'
+    ))
+  
+  
+  vis_data_bi <- get_summary_data(
+    input_data,
+    role_title,
+    'Do you use any of the following business intelligence tools?',
+    n_items = 4
+  )
+  
+  
+  
+  
+  vis_data_cv_alg <-  get_summary_data(
+    input_data,
+    role_title,
+    'Which categories of computer vision methods do you use on a regular basis?',
+    n_items = 4
+  ) %>% 
+    mutate(
+      items = recode(
+        items,
+        `Image classification and other general purpose networks (VGG, Inception, ResNet, ResNeXt, NASNet, EfficientNet, etc)` = 'Image classification',
+        `General purpose image/video tools (PIL, cv2, skimage, etc)` = 'General purpose image/video tools',
+        `Object detection methods (YOLOv3, RetinaNet, etc)` = 'Object detection',
+        `Generative Networks (GAN, VAE, etc)` = 'Generative Networks',
+        `Image segmentation methods (U-Net, Mask R-CNN, etc)` = 'Image segmentation methods'
+      )
+    ) 
+  
+  
+  
+  vis_data_nlp_alg <-
+    get_summary_data(
+      input_data,
+      role_title,
+      'Which of the following natural language processing (NLP) methods do you use on a regular basis?'
+    ) %>%
+    
+    mutate(
+      items = recode(
+        items,
+        `Word embeddings/vectors (GLoVe, fastText, word2vec)` = 'Word embeddings',
+        `Transformer language models (GPT-3, BERT, XLnet, etc)` = 'Transformers',
+        `Encoder-decorder models (seq2seq, vanilla transformers)` = 'Encoder-decorder models',
+        `Contextualized embeddings (ELMo, CoVe)` = 'Contextualized embeddings'
+      )
+    )  
+  
+  
+  vis_data_cloud <-
+    get_summary_data(
+      input_data,
+      role_title,
+      'Which of the following cloud computing platforms do you use?',
+      n_items = 4,
+      filter_ratio = 0
+    )
+  
+  
+  
+  
+  vis_data_cloud_storage <-
+    get_summary_data(input_data,
+                     role_title,
+                     'Do you use any of the following data storage products?',
+                     n_items = 4)
+  
+  vis_data_manager_ml <-
+    get_summary_data(
+      input_data,
+      role_title,
+      'Do you use any of the following managed machine learning products on a regular basis?',
+      n_items = 4
+    ) 
+}

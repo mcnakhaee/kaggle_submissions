@@ -1,0 +1,527 @@
+
+input_data <-get_summary_data(kaggle_survey_2022,'Teacher / professor','On which platforms have you begun or completed data science courses?')
+question = 'On which platforms have you begun or completed data science courses?'
+input_data <- kaggle_survey_2022
+role_title <- 'Data Scientist'
+role <-'Data Analyst'
+
+
+# This function prepares the data for visualization.
+#It takes a role_title such as data analyst and a column name corresponding to the select all that applies questions (e.g. Which of the following machine learning frameworks do you use on a regular basis?)
+# Then it computes the percentage of users with the given role_title that use a tool or an algorithm specified in the quesions
+# Input:
+# Output:
+
+
+get_summary_data <-
+  function(input_data,
+           role_title,
+           question,
+           items_vector = '',
+           n_items = 5,
+           filter_ratio = 0.2,
+           wrap_text = TRUE) {
+    summary_data <- input_data %>%
+      select(role,
+             starts_with(question)) %>%
+      mutate(n_participants = nrow(.)) %>%
+      group_by(role) %>%
+      mutate(n_participants_per_g = n()) %>%
+      ungroup() %>%
+      
+      make_long_df(question,
+                   'items') %>%
+      filter(
+        !is.na(items),
+        !str_detect(items, 'None'),
+        !str_detect(items, 'Other'),
+        !str_detect(items, 'nan')
+      ) %>%
+      group_by(items) %>%
+      mutate(avg_ratio = n() / mean(n_participants)) %>%
+      ungroup() %>%
+      group_by(role, items) %>%
+      
+      summarise(
+        ratio = n() / mean(n_participants_per_g),
+        avg_ratio = mean(avg_ratio)
+      ) %>%
+      mutate(
+        if_bigger_than_average = ratio > avg_ratio,
+        label = if_else(if_bigger_than_average, 'higher', 'lower')
+      ) %>%
+      group_by(items) %>%
+      mutate(n_roles = n(),
+             ranking = n_roles - rank(ratio) + 1,) %>%
+      filter(role == role_title) %>%
+      arrange(desc(ratio)) %>%
+      #filter(((ratio >= 0.2))|(ratio>0.5)) %>% #(ratio > avg_ratio) &
+      suppressMessages()
+    if (wrap_text) {
+      summary_data <- summary_data %>%
+        mutate(items = str_wrap(items, width = 15))
+      
+    }
+    
+    if (length(items_vector) < 2)
+      
+      summary_data %>%
+      slice_max(ratio , n = n_items)
+    else
+      summary_data %>%  filter(items %in% items_vector) %>%
+      slice_max(ratio , n = n_items)
+  }
+
+
+
+# This function creates video-game like bar charts for kaggle questions
+# Input
+create_power_bars <- function(input_data,fill_color='#2a9d8f',title = '',emoji_char = 'sword'){
+  # options(repr.plot.width=10, repr.plot.height=5,warn = -1)
+  options()
+  
+  input_data %>%
+    ggplot(aes( x = fct_reorder(items,ratio))) +
+    geom_chicklet(aes(y = 1), fill = '#023047',color = '#023047') +
+    geom_col(aes(y = ratio),
+             alpha = 0.4,
+             width = 0.7,
+             fill = fill_color) +
+    geom_col(aes(y = avg_ratio),
+             alpha = 0.9,
+             width = 0.7,
+             fill = fill_color) +
+    geom_chicklet(aes(y = avg_ratio),
+                  colour = "#f1faee",fill = 'transparent',size= 2,width = 0.7,linetype = 'dotted') +
+    geom_chicklet(aes(y = 0.1),
+                  colour = "#f1faee",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.2),radius =  grid::unit(3, "pt"),
+                  colour = "#f1faee",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.3),radius =  grid::unit(3, "pt"),
+                  colour = "#f1faee",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.4),
+                  colour = "#f1faee",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.5),radius =  grid::unit(3, "pt"),
+                  colour = "#f1faee",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.6),radius =  grid::unit(3, "pt"),
+                  colour = "#f1faee",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.7),radius =  grid::unit(3, "pt"),
+                  colour = "#f1faee",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.8),radius =  grid::unit(3, "pt"),
+                  colour = "#f1faee",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.9),radius =  grid::unit(3, "pt"),
+                  colour = "#f1faee",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 1),radius =  grid::unit(3, "pt"),
+                  colour = "#f1faee",fill = 'transparent',size= 2,width = 0.7) +
+
+    geom_text(aes(y=1.07,label = round(100*ratio)),family = my_font,size = 13,color = '#f1faee')+
+    geom_text(aes(y=1.17,label = round(100*(ratio-avg_ratio)),color = label),family = my_font,size = 12,color = '#f1faee')+
+    scale_color_manual(values = c('lower'='#ef476f','higher'='#06d6a0'))+
+    labs(x = '',y ='',title = title)+
+    coord_flip() +
+    theme_void(base_family = my_font)  +
+    theme(
+      legend.position = 'none',
+      axis.title = element_text(family = my_font,hjust = 0.5,size = 50,margin = margin(b = 3),color = '#f1faee'),#,aspect.ratio =1,
+      axis.line = element_blank(),
+      axis.ticks = element_blank(),
+      axis.text.x = element_blank(),
+      axis.text.y = element_text(size = 44,margin=grid::unit(c(0,0,0,0), "mm"),hjust = 1,color = '#f1faee'),
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      plot.background = element_rect(color = '#023047',fill = '#023047'),
+      panel.background = element_rect(color = '#023047',fill = '#023047') ) 
+  
+  
+}
+
+
+
+
+
+# This function assembles all the video-game bar charts into one plot
+patch_plots <- function(input_data,role_title,show_plot = FALSE) {
+  vis_data_programming_languages <-
+    get_summary_data(
+      input_data,
+      role_title,
+      "What programming languages do you use on a regular basis?",
+      n_items = 6,
+      items_vector = programming_languages
+    )
+  
+  vis_data_databases <-
+    get_summary_data(
+      input_data,
+      role_title,
+      "Do you use any of the following data products (relational databases, data warehouses, data lakes, or similar)?",
+      n_items = 6
+    )
+  
+  vis_data_ml_algorithm <-
+    get_summary_data(
+      input_data,
+      role_title,
+      "Which of the following ML algorithms do you use on a regular basis?",
+      n_items = 6,
+      items_vector = ml_algorithms,
+      #filter_ratio = 0
+    ) %>%   mutate(
+      items = recode(
+        items,
+        `Dense Neural Networks (MLPs, etc)` = 'Dense Neural Networks',
+        `Gradient Boosting Machines (xgboost, lightgbm, etc)` = 'Gradient Boosting Machines',
+        `Transformer Networks (BERT, gpt-3, etc)` = 'Transformer Networks'
+      )
+    )
+  
+  
+  vis_data_mlframework <-
+    get_summary_data(
+      input_data,
+      role_title,
+      'Which of the following machine learning frameworks do you use on a regular basis?',
+      n_items = 6
+    )
+  
+  
+  vis_data_ide <-
+    get_summary_data(input_data,
+                     role_title,
+                     'Which of the following integrated development environments',
+                     'IDE',
+                     filter_ratio = 0.0)
+  
+  
+  vis_data_vis <-
+    get_summary_data(
+      input_data,
+      role_title,
+      'Do you use any of the following data visualization libraries on a regular basis?',
+      items_vector = vis_libraries
+    ) %>%
+    mutate(items = recode(
+      items,
+      `Ggplot / ggplot2` = 'ggplot2',
+      `Plotly / Plotly Express` = 'Plotly'
+    ))
+  
+  
+  vis_data_bi <- get_summary_data(
+    input_data,
+    role_title,
+    'Do you use any of the following business intelligence tools?',
+    n_items = 4
+  )
+  
+  
+  
+  
+  vis_data_cv_alg <-  get_summary_data(
+    input_data,
+    role_title,
+    'Which categories of computer vision methods do you use on a regular basis?',
+    n_items = 4
+  ) %>% 
+    mutate(
+      items = recode(
+        items,
+        `Image classification and other general purpose networks (VGG, Inception, ResNet, ResNeXt, NASNet, EfficientNet, etc)` = 'Image classification',
+        `General purpose image/video tools (PIL, cv2, skimage, etc)` = 'General purpose image/video tools',
+        `Object detection methods (YOLOv3, RetinaNet, etc)` = 'Object detection',
+        `Generative Networks (GAN, VAE, etc)` = 'Generative Networks',
+        `Image segmentation methods (U-Net, Mask R-CNN, etc)` = 'Image segmentation methods'
+      )
+    ) 
+  
+  
+  
+  vis_data_nlp_alg <-
+    get_summary_data(
+      input_data,
+      role_title,
+      'Which of the following natural language processing (NLP) methods do you use on a regular basis?'
+    ) %>%
+    
+    mutate(
+      items = recode(
+        items,
+        `Word embeddings/vectors (GLoVe, fastText, word2vec)` = 'Word embeddings',
+        `Transformer language models (GPT-3, BERT, XLnet, etc)` = 'Transformers',
+        `Encoder-decorder models (seq2seq, vanilla transformers)` = 'Encoder-decorder models',
+        `Contextualized embeddings (ELMo, CoVe)` = 'Contextualized embeddings'
+      )
+    )  
+  
+  
+  vis_data_cloud <-
+    get_summary_data(
+      input_data,
+      role_title,
+      'Which of the following cloud computing platforms do you use?',
+      n_items = 4,
+      filter_ratio = 0
+    )
+
+  
+  
+  
+  vis_data_cloud_storage <-
+    get_summary_data(input_data,
+                     role_title,
+                     'Do you use any of the following data storage products?',
+                     n_items = 4)
+
+  vis_data_manager_ml <-
+    get_summary_data(
+      input_data,
+      role_title,
+      'Do you use any of the following managed machine learning products on a regular basis?',
+      n_items = 4
+    ) 
+  
+  
+  ml_alg_plot <- create_power_bars(vis_data_ml_algorithm, '#f4a261',title = 'ML Algorithms⚔️',emoji_char = "kiwi_fruit" )
+  ml_framework_plot <- create_power_bars(vis_data_mlframework, '#f4a261',title = 'ML Frameworks️️')
+  vis_plot <- create_power_bars(vis_data_vis, '#2a9d8f',title = 'Visualization Libraries')
+  bi_plot <- create_power_bars(vis_data_bi, '#2a9d8f',title = 'Business Intelligence Tools' )
+  nlp_alg_plot <- create_power_bars(vis_data_nlp_alg, '#118ab2',title = 'NLP Algorithms')
+  cv_alg_plot <- create_power_bars(vis_data_cv_alg, '#118ab2',title = 'Computer Vision Algorithms')
+  db_plot <- create_power_bars(vis_data_databases, '#ef476f',title = 'Databases')
+  programming_plot <- create_power_bars(vis_data_programming_languages, '#ef476f',title = 'Programming Languages')
+  cloud_plot <- create_power_bars(vis_data_cloud, '#ffd166',title = 'Cloud Platforms')
+  data_storage_plot <- create_power_bars(vis_data_cloud_storage, '#ffd166',title = 'Data Storage')
+  ide_plot <- create_power_bars(vis_data_ide, '#f5cac3',title = 'IDE')
+  mmp_plot <- create_power_bars(vis_data_manager_ml, '#f5cac3',title = 'Managed ML Products')
+  options(repr.plot.width=60, repr.plot.height=15,warn = -1)
+  #4. Kaggle notebooks are not perfect for displaying charts made by R and ggplot2.
+  #I had to spend hours to try to fix the issue with displaying my bar chart plots with the right font size and resolution but unfortunately the plots are not shown perfectly fine.
+  #So, I used images of these plot that I created in my local machine. But still if you set the `show_plot=TRUE` the plots will be shown.
+  if(show_plot){
+    programming_plot + db_plot + ml_alg_plot + ml_framework_plot + vis_plot + bi_plot + nlp_alg_plot + cv_alg_plot + cloud_plot + data_storage_plot + ide_plot + mmp_plot + plot_layout(nrow = 3,ncol = 4,heights = c(6,4,4),widths = c(1,1,1,1)) 
+    
+  }
+  
+}
+
+
+# This function  creates summary plots with information about the median of several variables and main activities that a role does 
+plot_summary_info <-function(role_title,img,coding_experience_med_summary,ml_experience_med_summary,compensation_med_summary) {
+  options(repr.plot.width=10, repr.plot.height=5,warn = -1)
+  coding_experience_med_summary <- coding_experience_med_summary %>% 
+    filter(role == role_title) 
+  ml_experience_med_summary <- ml_experience_med_summary %>% 
+    filter(role == role_title) 
+  compensation_med_summary <- compensation_med_summary %>% 
+    filter(role == role_title) 
+  
+  quests <- get_summary_data(role,'Select any activities that make up an important part of your role at work:') 
+  
+  # If the average percentage of a role users that do a certain activity is larger than average percentage of all users, I'd consider it as a distinct quests for that role
+  top_quests <- quests %>% 
+    filter(if_bigger_than_average) %>% 
+    slice(1:3) %>% 
+    group_by(role_title) %>% 
+    mutate(text = paste0(items,collapse = " \n ")) %>% 
+    slice(1)
+  
+  
+  # If there is not such an activity exists then I'd say that is no distinct quest for that particular role
+  if(nrow(top_quests) <1 ){
+    #quests <- data.frame(text='Their distinct quest might not be clear in the survey')
+    top_quests <-  quests %>% 
+      # filter(if_bigger_than_average) %>% 
+      slice(1) %>% 
+      #group_by(role_title) %>% 
+      mutate(text = 'Their distinct quest might not be provided in the survey') 
+  }
+  
+  g <- ggplot()+
+    
+    geom_textbox(data = compensation_med_summary,aes(x = 1,y=3.85,label = paste(median_compensation,'$')),
+                 family =my_font,width = unit(0.4, "npc"),size = 7,nudge_x =.45,color = '#2a9d8f') +
+    geom_text(data = compensation_med_summary,aes(x = .9,y=3.85,label =  'Median Compensation'),
+              family =my_font,hjust = 0,size = 7,alpha = 0.5,nudge_x =.45) +
+    geom_textbox(data = coding_experience_med_summary,aes(x = 1,y=3.75,label = median_coding_experience),
+                 family =my_font,width = unit(0.4, "npc"),size = 7,nudge_x =.45,color = '#e07a5f') +
+    geom_text(data = coding_experience_med_summary,aes(x = .90,y=3.75,label =  'Median Coding XP'),
+              family =my_font,hjust = 0,size = 7,alpha = 0.5,nudge_x =.45) +
+    geom_textbox(data = ml_experience_med_summary,aes(x = 1,y=3.65,label = median_ml_experience),
+                 family =my_font,width = unit(0.4, "npc"),size = 7,nudge_x =.45,color = '#3d405b') +
+    geom_text(data = ml_experience_med_summary,aes(x = .9,y=3.65,label =  'Median ML XP'),
+              family =my_font,hjust = 0,size = 7,alpha = 0.5,nudge_x =.45) +
+    geom_text(data = top_quests,aes(x = 0.95,y=3.39,label = text),
+              family =my_font,size = 6,nudge_x =0.65) +
+    geom_text(data = top_quests,aes(x = 0.95,y=3.51,label = 'Main Quests:'),
+              family =my_font,size = 10,nudge_x =0.55,hjust = 0.5) +
+    scale_y_continuous(limits = c(3.,3.9)) +
+    scale_x_continuous(limits = c(0.6,2.7)) +
+    theme_void() +
+    inset_element(p = img,
+                  left = 0.,
+                  bottom = 0.45,
+                  right = 0.2,
+                  top = 0.96) 
+  
+  g
+  
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# This function creates video-game like bar charts for kaggle questions
+# Input
+create_power_bars <- function(input_data,fill_color='#2a9d8f',title = '',emoji_char = 'sword'){
+  # options(repr.plot.width=10, repr.plot.height=5,warn = -1)
+  options()
+  
+  input_data %>%
+    ggplot(aes( x = fct_reorder(items,ratio))) +
+    geom_chicklet(aes(y = 1), fill = '#023047',color = '#023047') +
+    geom_col(aes(y = ratio,fill = label),
+             alpha = 0.4,
+             width = 0.7,
+             ) +
+    # geom_col(aes(y = avg_ratio),
+    #          alpha = 0.9,
+    #          width = 0.7,
+    #          fill = fill_color) +
+    geom_chicklet(aes(y = avg_ratio),
+                  colour = "#f1faee",fill = 'transparent',size= 2,width = 0.7,linetype = 'dotted') +
+    geom_chicklet(aes(y = 0.1),
+                  colour = "#f1faee",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.2),radius =  grid::unit(3, "pt"),
+                  colour = "#f1faee",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.3),radius =  grid::unit(3, "pt"),
+                  colour = "#f1faee",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.4),
+                  colour = "#f1faee",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.5),radius =  grid::unit(3, "pt"),
+                  colour = "#f1faee",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.6),radius =  grid::unit(3, "pt"),
+                  colour = "#f1faee",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.7),radius =  grid::unit(3, "pt"),
+                  colour = "#f1faee",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.8),radius =  grid::unit(3, "pt"),
+                  colour = "#f1faee",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.9),radius =  grid::unit(3, "pt"),
+                  colour = "#f1faee",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 1),radius =  grid::unit(3, "pt"),
+                  colour = "#f1faee",fill = 'transparent',size= 2,width = 0.7) +
+    
+    geom_text(aes(y=1.07,label = round(100*ratio)),family = my_font,size = 13,color = '#f1faee')+
+    #geom_text(aes(y=1.17,label = round(100*(ratio-avg_ratio)),color = label),family = my_font,size = 12,color = '#f1faee')+
+    #scale_color_manual(values = c('lower'='#ef476f','higher'='#06d6a0'))+
+    geom_text(aes(y=1.17,label = round((ranking)),color = label),family = my_font,size = 12,color = '#f1faee')+
+    
+    scale_fill_manual(values = c('lower'='#ef476f','higher'='#06d6a0'))+
+    
+    labs(x = '',y ='',title = title)+
+    coord_flip() +
+    theme_void(base_family = my_font)  +
+    theme(
+      legend.position = 'none',
+      axis.title = element_text(family = my_font,hjust = 0.5,size = 50,margin = margin(r = 30),color = '#f1faee'),#,aspect.ratio =1,
+      axis.line = element_blank(),
+      axis.ticks = element_blank(),
+      axis.text.x = element_blank(),
+      axis.text.y = element_text(size = 44,margin=margin(r = 30),hjust = 0.5,color = '#f1faee'),
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      plot.background = element_rect(color = '#023047',fill = '#023047'),
+      panel.background = element_rect(color = '#023047',fill = '#023047') ) 
+  
+  
+}
+
+
+
+
+
+
+
+
+
+plot_summary_info <-function(input_data,role_title) {
+  options(repr.plot.width=10, repr.plot.height=5,warn = -1)
+  coding_experience_med_summary <- coding_experience_med_summary %>% 
+    filter(role == role_title) 
+  ml_experience_med_summary <- ml_experience_med_summary %>% 
+    filter(role == role_title) 
+  compensation_med_summary <- compensation_med_summary %>% 
+    filter(role == role_title) 
+  
+  quests <- get_summary_data(input_data,role_title,'Select any activities that make up an important part of your role at work:',wrap_text = FALSE) 
+  
+  # If the average percentage of a role users that do a certain activity is larger than average percentage of all users, I'd consider it as a distinct quests for that role
+  top_quests <- quests %>% 
+    filter(if_bigger_than_average) %>% 
+    slice(1:3) %>% 
+    group_by(role) %>% 
+    mutate(text = paste0(items,collapse = " \n ")) %>% 
+    slice(1)
+  
+  
+  # If there is not such an activity exists then I'd say that is no distinct quest for that particular role
+  if(nrow(top_quests) <1 ){
+    #quests <- data.frame(text='Their distinct quest might not be clear in the survey')
+    top_quests <-  quests %>% 
+      # filter(if_bigger_than_average) %>% 
+      slice(1) %>% 
+      #group_by(role_title) %>% 
+      mutate(text = 'Their distinct quest might not be provided in the survey') 
+  }
+  
+  g <- ggplot()+
+    
+    geom_textbox(data = compensation_med_summary,aes(x = 1,y=3.85,label = paste(median_compensation,'$')),
+                 family =my_font,width = unit(0.4, "npc"),size = 7,nudge_x =.45,color = '#2a9d8f') +
+    geom_text(data = compensation_med_summary,aes(x = .9,y=3.85,label =  'Median Compensation'),
+              family =my_font,hjust = 0,size = 7,alpha = 0.5,nudge_x =.45) +
+    geom_textbox(data = coding_experience_med_summary,aes(x = 1,y=3.75,label = median_coding_experience),
+                 family =my_font,width = unit(0.4, "npc"),size = 7,nudge_x =.45,color = '#e07a5f') +
+    geom_text(data = coding_experience_med_summary,aes(x = .90,y=3.75,label =  'Median Coding XP'),
+              family =my_font,hjust = 0,size = 7,alpha = 0.5,nudge_x =.45) +
+    geom_textbox(data = ml_experience_med_summary,aes(x = 1,y=3.65,label = median_ml_experience),
+                 family =my_font,width = unit(0.4, "npc"),size = 7,nudge_x =.45,color = '#3d405b') +
+    geom_text(data = ml_experience_med_summary,aes(x = .9,y=3.65,label =  'Median ML XP'),
+              family =my_font,hjust = 0,size = 7,alpha = 0.5,nudge_x =.45) +
+    geom_text(data = top_quests,aes(x = 0.95,y=3.39,label = text),
+              family =my_font,size = 6,nudge_x =0.65) +
+    geom_text(data = top_quests,aes(x = 0.95,y=3.51,label = 'Main Quests:'),
+              family =my_font,size = 10,nudge_x =0.55,hjust = 0.5) +
+    scale_y_continuous(limits = c(3.,3.9)) +
+    scale_x_continuous(limits = c(0.6,2.7)) +
+    theme_void(base_family = my_font)  +
+    theme(
+      plot.background = element_rect(color = '#023047',fill = '#023047'),
+      panel.background = element_rect(color = '#023047',fill = '#023047') ) 
+  
+    # inset_element(p = img,
+    #               left = 0.,
+    #               bottom = 0.45,
+    #               right = 0.2,
+    #               top = 0.96) 
+  
+  g
+  
+}

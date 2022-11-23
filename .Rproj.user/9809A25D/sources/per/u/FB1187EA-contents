@@ -1,0 +1,119 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+On which platforms have you begun or completed data science courses?
+
+```{r}
+  summary_data <- kaggle_2021 %>%
+    select(
+      role_title,
+      starts_with('On which platforms have you begun or completed data science courses?')
+    ) %>%
+    mutate(n_participants = nrow(.)) %>%
+    group_by(role_title) %>%
+    mutate(n_participants_per_g = n()) %>%
+    ungroup() %>%
+        make_long_df('On which platforms have you begun or completed data science courses?',
+                 'items') %>%
+    filter(!is.na(items),!str_detect(items, 'None'),!str_detect(items, 'Other')) %>%
+    group_by(items) %>%
+    mutate(avg_ratio = n() / mean(n_participants)) %>%
+    ungroup() %>%
+    group_by(role_title, items) %>% 
+  
+      summarise(ratio = n() / mean(n_participants_per_g),
+              avg_ratio = mean(avg_ratio)) %>%
+    mutate(
+      if_bigger_than_average = ratio > avg_ratio,
+      label = if_else(if_bigger_than_average, 'higher', 'lower')
+    ) %>% 
+    filter(role_title == 'Teacher / professor') %>%
+    arrange(desc(ratio))%>%
+    suppressMessages()
+  
+  if (length()<2) 
+    summary_data %>% 
+    slice_max(ratio ,n =3) 
+  else
+    summary_data %>%  filter(items %in% item_vec) %>% 
+    slice_max(ratio ,n =3) 
+    
+```
+
+```{r}
+names(kaggle_2021)
+```
+
+Who/what are your favorite media sources that report on data science topics?
+
+Do you use any of the following types of specialized hardware when training machine learning models?
+
+Do you use any of the following business intelligence tools?
+
+Do you use any of the following data products (relational databases, data warehouses, data lakes, or similar)? (Select all that apply)
+
+Do you use any of the following data storage products? (Select all that apply)
+
+Do you use any of the following automated machine learning tools? (Select all that apply)
+
+Select any activities that make up an important part of your role at work
+
+Approximately how much money have you spent on machine learning and/or cloud computing services at home or at work in the past 5 years (approximate \$USD)?\\n (approximate \$USD)?
+
+[149] "Approximately how many individuals are responsible for data science workloads at your place of business?"
+
+[150] "Does your current employer incorporate machine learning methods into their business?"
+
+```{r,fig.height=10,fig.width=10}
+  input_data %>%
+    ggplot(aes( x = fct_reorder(items,ratio))) +
+    geom_chicklet(aes(y = 1), fill = 'white') +
+    
+    #with_inner_glow(
+    
+    geom_col(aes(y = ratio),
+             alpha = 0.9,
+             width = 0.9,
+             fill = fill_color) +
+    geom_col(aes(y = avg_ratio),
+             alpha = 0.7,
+             width = 0.7,
+             fill = fill_color) +
+    geom_chicklet(aes(y = 0.1),
+                  colour = "#264653",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.2),radius =  grid::unit(3, "pt"),
+                  colour = "#264653",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.3),radius =  grid::unit(3, "pt"),
+                  colour = "#264653",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.4),
+                  colour = "#264653",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.5),radius =  grid::unit(3, "pt"),
+                  colour = "#264653",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.6),radius =  grid::unit(3, "pt"),
+                  colour = "#264653",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.7),radius =  grid::unit(3, "pt"),
+                  colour = "#264653",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.8),radius =  grid::unit(3, "pt"),
+                  colour = "#264653",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 0.9),radius =  grid::unit(3, "pt"),
+                  colour = "#264653",fill = 'transparent',size= 2,width = 0.7) +
+    geom_chicklet(aes(y = 1),radius =  grid::unit(3, "pt"),
+                  colour = "#264653",fill = 'transparent',size= 2,width = 0.7) +
+    geom_text(aes(y=1.07,label = round(100*ratio)),family = my_font,size = 13)+
+    #geom_text(aes(y=1.17,label = round(100*(ratio-avg_ratio)),color = label),family = my_font,size = 12)+
+    scale_color_manual(values = c('lower'='#ef476f','higher'='#06d6a0'))+
+    labs(x = '',y ='',title = title)+
+    coord_flip() +
+    theme_void(base_family = my_font)  +
+    theme(
+      legend.position = 'none',
+      axis.title = element_text(family = my_font,hjust = 0.5,size = 50,margin = margin(b = 3)),#,aspect.ratio =1,
+      axis.line = element_blank(),
+      axis.ticks = element_blank(),
+      axis.text.x = element_blank(),
+      axis.text.y = element_text(size = 44,margin=grid::unit(c(0,0,0,0), "mm"),hjust = 1),
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank()) 
+```

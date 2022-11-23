@@ -1,0 +1,44 @@
+"0","```r
+most_compute_power %>% 
+  ggplot() +
+      geom_text(
+      aes(
+        x = .95, y = rowname,
+        label = glue::glue(\"{rowname}.\"),
+        #color = rank_na,
+        #color = after_scale(colorspace::lighten(color, .3, space = \"HLS\"))
+      ),
+      family = \"Overpass Mono\",
+      fontface = \"bold\",
+      size = 3.5,
+      hjust = 1
+    ) +
+    geom_text(
+      aes(
+        x = 1, y = rowname,
+        label = country,
+        #color = rank_na,
+        #color = after_scale(colorspace::lighten(color, .3, space = \"HLS\"))
+      ),
+      family = \"Overpass\",
+      fontface = \"bold\",
+      size = 3.5,
+      hjust = 0
+    ) +
+        theme_void() +
+  
+    theme(text = element_text(family = 'VT323',hjust = 0.5),
+      plot.title = element_text(family = 'VT323'),
+          plot.caption = element_text(family = \"Oswald\", 
+                                      size = 10, 
+                                      color = \"grey70\",
+                                      face = \"bold\",
+                                      hjust = 0.5,
+                                      margin = margin(t = -15, b = 10)),
+          legend.position = c(0.5, 0.15),
+          legend.key.height = unit(0.5, \"lines\"), 
+          legend.key.width = unit(.5, \"lines\"),
+      plot.background = element_rect(fill = \"#B8CCCC\", color = NA)
+
+)
+```"

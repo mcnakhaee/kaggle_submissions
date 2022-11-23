@@ -1,0 +1,41 @@
+"0","```r
+
+
+world %>%
+  st_transform(3395) %>%
+  left_join(supercomputers_counts, by = c(\"sovereignt\" = \"country\")) %>%
+  filter(continent != \"Antarctica\") %>%
+  ggplot() +
+  geom_sf(aes(geometry = geometry, fill = n), color = \"grey95\", size = 0.1) +
+  scale_fill_carto_c(
+    name = \"Life expectancy: \",
+    type = \"diverging\", palette = \"Earth\", direction = -1
+  ) +
+
+
+  # guides(fill = guide_legend(title.position = \"top\",
+  #                             title.hjust = 0.5, nrow = 1,
+  #                             label.position = \"bottom\",
+  #                             override.aes = list(size = 5),
+  #                             reverse = T)) +
+
+  guides(fill = guide_colourbar(nbin = 100, draw.ulim = FALSE, draw.llim = FALSE)) +
+  theme_void() +
+  theme(
+    text = element_text(family = \"VT323\", hjust = 0.5),
+    plot.title = element_text(family = \"VT323\"),
+    plot.caption = element_text(
+      family = \"Oswald\",
+      size = 10,
+      color = \"grey70\",
+      face = \"bold\",
+      hjust = 0.5,
+      margin = margin(t = -15, b = 10)
+    ),
+    legend.position = c(0.5, 0.15),
+    legend.key.height = unit(0.5, \"lines\"),
+    legend.key.width = unit(.5, \"lines\"),
+    plot.background = element_rect(fill = \"#B8CCCC\", color = NA)
+  )
+      
+```"

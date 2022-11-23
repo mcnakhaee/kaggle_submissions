@@ -1,0 +1,291 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+#remotes::install_github("hrbrmstr/ggchicklet",upgrade = 'never')
+options(warn = -1)
+library(ggchicklet)
+library(showtext)
+library(tidyverse)
+library(patchwork)
+library(ggtext)
+library(png)
+
+
+```
+
+```{r}
+# The font for data visualizations and plots
+font_add_google("VT323", "VT323")
+showtext_auto()
+my_font <- "VT323"
+
+# This function transforms the select all that applies questions (wide) to a long format which is useful for data visualization
+make_long_df <- function(input_df, cols_id, values_to,id_name = 'id') {
+  df_tmp <- input_df %>%
+    rownames_to_column(var = id_name) %>%
+    pivot_longer(contains(cols_id),
+                 names_to = 'tmp',
+                 values_to = values_to) %>%
+    select(-tmp)
+  
+}
+
+# This function can calculate the median value of categorical variables such as compensation
+# The 
+median.ordered <- function(x)
+{
+  levs <- levels(x)
+  m <- median(as.integer(x))
+  if (floor(m) != m)
+  {
+    warning("Median is between two values; using the first one")
+    m <- floor(m)
+  }
+  ordered(m, labels = levs, levels = seq_along(levs))
+}
+
+
+
+activity <- 'Select any activities that make up an important part of your role at work:'
+nlp <- 'Which of the following natural language processing (NLP) methods do you use on a regular basis? '
+courses <- 'On which platforms have you begun or completed data science courses?'
+
+# reorder values in the compensation column
+compensation_levels <-
+  c(
+    "$0-999",
+    "1,000-1,999",
+    "2,000-2,999",
+    "3,000-3,999",
+    "4,000-4,999",
+    "5,000-7,499",
+    "7,500-9,999",
+    '10,000-14,999',
+    "15,000-19,999",
+    "20,000-24,999",
+    "25,000-29,999",
+    '30,000-39,999',
+    '40,000-49,999',
+    '50,000-59,999',
+    '60,000-69,999',
+    "70,000-79,999",
+    '80,000-89,999',
+    '90,000-99,999',
+    '100,000-124,999',
+    '125,000-149,999',
+    "150,000-199,999",
+    "200,000-249,999",
+    "250,000-299,999",
+    "300,000-499,999",
+    "$500,000-999,999"
+  )
+
+ml_algorithms <- c('Linear or Logistic Regression',
+                   'Decision Trees or Random Forests',
+                   'Gradient Boosting Machines (xgboost, lightgbm, etc)',
+                   'Convolutional Neural Networks',
+                   'Bayesian Approaches',
+                   'Generative Adversarial Networks',
+                   'Transformer Networks (BERT, gpt-3, etc)',
+                   'Dense Neural Networks (MLPs, etc)')
+
+ml_frameworks <- c('Scikit-learn',	'Keras','TensorFlow','Tidymodels','PyTorch','Xgboost')
+
+cloud_platform <- c('Amazon Web Services (AWS)','Google Cloud Platform (GCP)','Microsoft Azure')
+
+vis_libraries <- c('Matplotlib','Seaborn','Plotly / Plotly Express','Ggplot / ggplot2')
+
+programming_languages <- c('Python','SQL','R','Javascript','Java','C',"C++",'Matlab','Bash')
+
+coding_experience_levels <- c('I have never written code','< 1 years','3-5 years','5-10 years','10-20 years','20+ years')
+
+ml_experience_levels <- c('I do not use machine learning methods','Under 1 year','1-2 years','2-3 years','3-4 years','4-5 years','5-10 years','10-20 years','20 or more years')
+
+
+```
+
+```{r}
+options(repr.plot.width=14, repr.plot.height=10,warn = -1)
+kaggle_survey_2022 <- read_csv('data/kaggle_survey_2022_responses.csv',skip = 1) 
+kaggle_survey_2022<-kaggle_survey_2022%>%
+  rename(
+    age = `What is your age (# years)?`,
+    country = `In which country do you currently reside?`,
+    gender = `What is your gender? - Selected Choice`,
+    has_papers = `Have you ever published any academic research (papers, preprints, conference proceedings, etc)?`,
+    education = `What is the highest level of formal education that you have attained or plan to attain within the next 2 years?`,
+    coding_experience = `For how many years have you been writing code and/or programming?`,
+    ml_experience = `For how many years have you used machine learning methods?`,
+    #computing_platform = `What type of computing platform do you use most often for your data science projects? - Selected Choice`,
+    company_size = `What is the size of the company where you are employed?`,
+    compensation = `What is your current yearly compensation (approximate $USD)?`,
+    role = `Select the title most similar to your current role (or most recent title if retired): - Selected Choice`,
+    industry = `In what industry is your current employer/contract (or your most recent employer if retired)? - Selected Choice`,
+  ) %>%
+        mutate(coding_experience = factor(coding_experience,levels = coding_experience_levels)) %>% 
+        mutate(coding_experience = factor(ml_experience,levels = ml_experience_levels)) %>% 
+        mutate(compensation_estimate = case_when(compensation =='$0-999' ~ runif(min = 0,max = 999,n=1),
+                                       compensation =='1,000-1,999' ~ runif(min = 1000,max = 1999,n=1),
+                                       compensation =='2,000-2,999' ~ runif(min = 2000,max = 2999,n=1),
+                                       compensation =='3,000-3,999' ~ runif(min = 3000,max = 3999,n=1),
+                                       compensation =='4,000-4,999' ~ runif(min = 4000,max = 4999,n=1),
+                                       compensation =='5,000-7,499' ~ runif(min = 5000,max = 7999,n=1),
+                                       compensation =='7,500-9,999' ~ runif(min = 7500,max = 9999,n=1),
+                                       compensation =='10,000-14,999' ~ runif(min = 10000,max = 14999,n=1),#
+                                       compensation =='15,000-19,999' ~ runif(min = 15000,max = 19999,n=1),
+                                       compensation =='20,000-24,999' ~ runif(min = 20000,max = 24999,n=1),
+                                       compensation =='25,000-29,999' ~ runif(min = 25000,max = 29999,n=1),
+                                       compensation =='30,000-39,999' ~ runif(min = 30000,max = 39999,n=1),
+                                       compensation =='40,000-49,999' ~ runif(min = 40000,max = 49999,n=1),
+                                       compensation =='50,000-59,999' ~ runif(min = 50000,max = 59999,n=1),
+                                       compensation =='60,000-69,999' ~ runif(min = 60000,max = 69999,n=1),
+                                       compensation =='70,000-79,999' ~ runif(min = 70000,max = 79999,n=1),
+                                       compensation =='80,000-89,999' ~ runif(min = 80000,max = 89999,n=1),
+                                       compensation =='90,000-99,999' ~ runif(min = 90000,max = 99999,n=1),                    
+                                       compensation =='100,000-124,999' ~ runif(min = 100000,max = 124999,n=1),
+                                       compensation =='125,000-149,999' ~ runif(min = 125000,max = 149999,n=1),
+                                       compensation =='150,000-199,999' ~ runif(min = 150000,max = 199999,n=1),
+                                       compensation =='200,000-249,999' ~ runif(min = 200000,max = 249999,n=1),
+                                       compensation =='250,000-299,999' ~ runif(min = 250000,max = 299999,n=1),
+                                       compensation =='300,000-499,999' ~ runif(min = 300000,max = 499999,n=1),
+                                       compensation =='$500,000-999,999' ~ runif(min = 500000,max = 999999,n=1),
+                                       TRUE ~ 0)) %>% 
+  filter(!is.na(compensation))  %>%
+    filter(role != 'Other',
+        !compensation %in%   c(		
+'>$1,000,000'))  
+
+# median for compensation
+compensation_med_summary <- kaggle_survey_2022 %>% 
+  filter(!is.na(role),!is.na(compensation)) %>% 
+  mutate(compensation = factor(compensation,levels = compensation_levels)) %>% 
+  group_by(role) %>% 
+    summarise(
+      median_compensation = median.ordered(compensation),
+    ) 
+
+# median for coding experience
+
+coding_experience_med_summary <- kaggle_survey_2022 %>% 
+  filter(!is.na(role),!is.na(coding_experience)) %>% 
+  group_by(role) %>% 
+    summarise(
+      median_coding_experience = median.ordered(coding_experience),
+    ) 
+
+ml_experience_med_summary <- kaggle_survey_2022 %>% 
+  filter(!is.na(role),!is.na(ml_experience)) %>% 
+  mutate(ml_experience = factor(ml_experience,levels = ml_experience_levels)) %>% 
+  group_by(role) %>% 
+    summarise(
+      median_ml_experience = median.ordered(ml_experience),
+    )
+```
+
+```{r,fig.height=10,fig.width=30}
+  programming_languages_summary <-
+  get_summary_data(
+    input_data,
+    role_title,
+    "What programming languages do you use on a regular basis?",
+    n_items = n_items
+  )
+```
+
+```{r fig.height=10,fig.width=40}
+ml_plot(input_data,role_title,n_items = 8)
+```
+
+```{r fig.height=10,fig.width=40}
+ml_plot(input_data,'Data Analyst (Business, Marketing, Financial, Quantitative, etc)',n_items = 8)
+```
+
+```{r fig.height=10,fig.width=40}
+tools_plot(input_data,'Data Analyst (Business, Marketing, Financial, Quantitative, etc)',n_items = 8)
+```
+
+```{r fig.height=10,fig.width=40}
+cloud_plot(input_data,'Data Analyst (Business, Marketing, Financial, Quantitative, etc)',n_items = 3)
+```
+
+```{r fig.height=20,fig.width=40}
+role_title <- 'Developer Advocate'
+visualization_plot(input_data,'Teacher / professor',n_items = 3)
+
+plot_summary_info(input_data ,'Teacher / professor') 
+tools_plot(input_data,role_title,n_items = 8)
+cloud_plot(input_data,role_title,n_items = 3)
+ml_plot(input_data,role_title,n_items = 8)
+ml_plot(input_data,role_title,n_items = 8)
+
+programming_languages_summary_plot + databases_summary_plot + ides_summary_plot + ml_frameworks_summary_plot + 
+  datastorage_summary_plot + datastorage_summary_plot + cloud_platforms_summary_plot + cloud_products_summary_plot+ ml_nlp_summary_plot +
+  plot_layout(nrow = 3,ncol = 4,heights = c(8,3,4),widths = c(1,1,1,1))
+    #ml_algorithms_summary_plot <- create_power_bars(ml_algorithms_summary, '#f4a261') 
+  #ml_nlp_summary_plot <- create_power_bars(ml_nlp_summary, '#2a9d8f')
+  #l_vision_summary_plot <- create_power_bars(ml_vision_summary, '#2a9d8f')
+  
+  plot_layout(nrow = 1)
+#,ncol = 4,heights = c(6,4,4),widths = c(1,1,1,1)) 
+
+  
+  
+  
+datastorage_summary_plot <- create_power_bars(datastorage_summary, '#2a9d8f')
+cloud_platforms_summary_plot <- create_power_bars(cloud_platforms_summary, '#2a9d8f')
+cloud_products_summary_plot <- create_power_bars(cloud_products_summary, '#2a9d8f')  
+visualization_plot(input_data,'Software Engineer',n_items = 4)
+```
+
+```{r}
+databases_summary
+```
+
+```{r}
+input_data %>% count(role) %>% View()
+```
+
+Related Champions
+
+\@\## Main Missions
+
+\@\## Side Missions
+
+\@\## Quotes
+
+Teacher/Professors
+
+You shall not pass ...
+
+**"This world will not be forgotten. I will replace it---a child devouring its parent."**
+
+This notebook is based my submission for the last year's competition. However, I cleaned up my coded and changed many other things.
+
+### Methodology
+
+In this part, I give an in-depth overview of my approach in this notebook
+
+:   I select columns that have similar names
+
+Turned wide columns to long dataframe based on the the Tidy Data principle
+
+The salary/ciompensation column contains categorical values. This would make calculating the median salary very difficult . I made the assumption that ... I used a uniform random distribution generator number to generate compensation estimates for each salary bracket.
+
+I made an assumption that the number of people in each role who poses a skill (such as programming with python) would be a good represtive of the importance of that particular skill for that group
+
+It would be great to look at them and see what are their strength and weaknesses. However, sometimes there are overlaps between these roles. For example, both data scientists and statisticians might wield Python but we want to know who is more proficient or a more frequent user in using Python. To answer these types of questions, I look at the percentage of data scientists that use Python and compare it with the average percentage of all Kaggle survey repsondents (all roles). If the percentage of Python users among data scientists is higher than average then I'd assume that Python is a distinct skill of data scientists. This is clear from *the video-game like* plot below which I show the difference between these two values between programming languages in colored numbers.
+
+Criteria
+
+For some questions, there are a lot of categories and some seem not to be important or ... . So, I selected these categories.
+
+If at least 20% of individuals in each role use a tool
+
+Mistakes I made:
+
+I did most of my analasys inRMarkdown files on my local RStudio IDE. RMarkdown files are more stable tools . However,
+
+Coming up with quotes was extremely challenging

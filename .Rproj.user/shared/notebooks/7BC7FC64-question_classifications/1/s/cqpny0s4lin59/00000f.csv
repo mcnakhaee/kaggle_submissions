@@ -1,0 +1,12 @@
+"0","  n_items = 8
+  programming_languages_summary <-
+  get_summary_data(
+    input_data,
+    role_title,
+    ""What programming languages do you use on a regular basis?"",
+    n_items = n_items
+  )
+"
+"2","Error in get_summary_data(input_data, role_title, ""What programming languages do you use on a regular basis?"",  : 
+  could not find function ""get_summary_data""
+"

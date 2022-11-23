@@ -1,0 +1,646 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+rs <- kaggle_survey_2022 %>% count(role) %>% pull(role)
+```
+
+```{r}
+  vis_data_mlframework <-
+    get_summary_data(
+      input_data,
+      role_title,
+      'Do you use any tools to help monitor your machine learning models and/or experiments?',
+      n_items = 6
+    )
+  
+  for (r in rs) {
+      print(  
+    get_summary_data(input_data,
+                     r,
+                     'Select any activities that make up an important part of your role at work',
+                     'IDE',
+                     filter_ratio = 0.0,
+                     n_items = 16))
+  }
+
+```
+
+Tools
+
+```{r}
+function(input_data,
+                       role_title,
+                       n_items = 7){
+programming_languages_summary <-
+  get_summary_data(
+    input_data,
+    role_title,
+    "What programming languages do you use on a regular basis?",
+    n_items = 7
+  )
+
+databases_summary <- get_summary_data(
+  input_data,
+  role_title,
+  "Do you use any of the following data products (relational databases, data warehouses, data lakes, or similar)?",
+  n_items = 7
+) %>%
+  mutate(
+    items = recode(
+      items,
+      `Microsoft SQL\nServer` = 'SQL Server',
+      `Google Cloud\nBigQuery` = 'BigQuery'
+    )
+  )
+
+
+ides_summary <-
+  get_summary_data(
+    input_data,
+    role_title,
+    "Which of the following integrated development environments (IDE's) do you use on a regular basis?",
+    n_items = 7
+  ) %>%
+  mutate(items = recode(items,
+                        `Visual Studio\nCode (VSCode)` = 'VSCode'))
+
+#n_items = 3
+cloud_platforms_summary <-
+  get_summary_data(
+    input_data,
+    role_title,
+    "Which of the following cloud computing platforms do you use?",
+    n_items = 4
+  ) %>%
+  mutate(
+    items = recode(
+      items,
+      `Amazon Web\nServices (AWS)` = 'AWS',
+      `Google Cloud\nPlatform (GCP)` = 'GCP',
+      `IBM Cloud / Red\nHat` = 'IBM Cloud',
+      
+      
+    )
+  )
+
+datastorage_summary <-
+  get_summary_data(input_data,
+                   role_title,
+                   "Do you use any of the following data storage products?",
+                   n_items = 4) %>%
+  mutate(
+    items = recode(
+      items,
+      `Amazon Simple\nStorage Service\n(S3)` = 'AWS-S3',
+      `Google Cloud\nStorage (GCS)` = 'Google Storage',
+      `Microsoft Azure\nBlob Storage` = 'Azure Blob\nStorage',
+      `Microsoft Azure\nFiles` = 'Azure\nFiles',
+      `Amazon Elastic\nFile System\n(EFS)` = 'AWS-EFS',
+      `Google Cloud\nFilestore` = 'Google\nFilestore'
+      
+      
+    )
+  )
+
+
+
+ml_frameworks_summary <-
+  get_summary_data(
+    input_data,
+    role_title,
+    "Which of the following machine learning frameworks do you use on a regular basis?",
+    n_items = 7
+  )
+
+ml_algorithms_summary <-
+  get_summary_data(
+    input_data,
+    role_title,
+    "Which of the following ML algorithms do you use on a regular basis?",
+    n_items = 6
+  ) %>%
+  mutate(
+    items = recode(
+      items,
+      `Dense Neural\nNetworks (MLPs,\netc)` = 'Dense Neural Networks',
+      `Gradient\nBoosting\nMachines\n(xgboost,\nlightgbm, etc)` = 'Gradient Boosting Machines',
+      `Transformer\nNetworks (BERT,\ngpt-3, etc)` = 'Transformer Networks',
+      `Linear or\nLogistic\nRegression` = 'Linear Models'
+    )
+  )
+
+  	
+
+ml_nlp_summary <-
+  get_summary_data(
+    input_data,
+    role_title,
+    "Which of the following natural language processing (NLP) methods do you use on a regular basis?",
+    n_items = 5
+  )
+
+ml_nlp_summary <- ml_nlp_summary %>% 
+    mutate(
+      items = recode(
+        items,
+        `Transformer\nlanguage models\n(GPT-3, BERT,\nXLnet, etc)` = 'Transformer\nlanguage models',
+        `Word\nembeddings/\nvectors (GLoVe,\nfastText,\nword2vec)  ` = 'Word embeddings vectors',
+        `Encoder-\ndecoder models\n(seq2seq,\nvanilla\ntransformers)` = 'Encoder-decoder\nmodels',
+        `Contextualized\nembeddings\n(ELMo, CoVe)` = 'Contextualized\nembeddings'
+      )
+    ) 
+
+ml_vision_summary <-
+  get_summary_data(
+    input_data,
+    role_title,
+    "Which categories of computer vision methods do you use on a regular basis?",
+    n_items = 5
+  )
+  
+ml_vision_summary <-ml_vision_summary%>% 
+    mutate(
+      items = recode(
+        items,
+        `Word embeddings/vectors (GLoVe, fastText, word2vec)` = 'Word embeddings',
+        `Transformer language models (GPT-3, BERT, XLnet, etc)` = 'Transformers',
+        `Encoder-decorder models (seq2seq, vanilla transformers)` = 'Encoder-decorder models',
+        `Contextualized embeddings (ELMo, CoVe)` = 'Contextualized embeddings'
+      )
+    ) 
+
+visualization_summary <-
+  get_summary_data(
+    input_data,
+    role_title,
+    "Do you use any of the following data visualization libraries on a regular basis?",
+    n_items = 4
+  ) %>%
+  mutate(items = recode(
+    items,
+    `Plotly / Plotly\nExpress` = 'Plotly',
+    `Ggplot /\nggplot2` = 'ggplot2'
+  ))
+
+bi_summary <-
+  get_summary_data(
+    input_data,
+    role_title,
+    "Do you use any of the following business intelligence tools?",
+    n_items = 4
+  ) %>%
+  mutate(
+    items = recode(
+      items,
+      `Google Data\nStudio` = 'Data nStudio',
+      `Microsoft Power\nBI` = 'Power BI'
+
+    )
+  )
+
+
+programming_languages_summary_plot <-create_power_bars(programming_languages_summary)
+databases_summary_plot <- create_power_bars(databases_summary, '#f4a261')
+ides_summary_plot <- create_power_bars(ides_summary, '#2a9d8f')
+datastorage_summary_plot <- create_power_bars(datastorage_summary, '#2a9d8f')
+cloud_platforms_summary_plot <- create_power_bars(cloud_platforms_summary, '#2a9d8f')
+ml_frameworks_summary_plot <-create_power_bars(ml_frameworks_summary)
+ml_algorithms_summary_plot <- create_power_bars(ml_algorithms_summary, '#f4a261')
+ml_nlp_summary_plot <- create_power_bars(ml_nlp_summary, '#2a9d8f')
+ml_vision_summary_plot <- create_power_bars(ml_vision_summary, '#2a9d8f')
+visualization_summary_plot <- create_power_bars(visualization_summary, '#2a9d8f')
+bi_summary_plot <- create_power_bars(bi_summary, '#2a9d8f')
+
+
+programming_languages_summary_plot + databases_summary_plot + ides_summary_plot + ml_frameworks_summary_plot + 
+  datastorage_summary_plot + cloud_platforms_summary_plot + ml_nlp_summary_plot +ml_vision_summary_plot + visualization_summary_plot +bi_summary_plot + plot_layout(nrow = 3,ncol = 4,heights = c(8,3,4),widths = c(1,1,1,1))
+
+}
+
+
+  visualization_summary_plot + bi_summary_plot 
+ml_frameworks_summary_plot + ml_algorithms_summary_plot + ml_vision_summary_plot + patchwork::plot_layout(nrow = 1)
+#cloud_products_summary_plot <- create_power_bars(cloud_products_summary, '#2a9d8f')
+    
+    
+    # cloud_products_summary <-
+    #   get_summary_data(
+    #     input_data,
+    #     role_title,
+    #     "Do you use any of the following cloud computing products?",
+    #     n_items = 3
+    #   ) %>%
+    #   mutate(
+    #     items = recode(
+    #       items,
+    #       `Amazon Elastic\nCompute Cloud\n(EC2)` = 'EC2',
+    #       `Google Cloud\nCompute Engine` = 'Google Storage',
+    #       `Microsoft\nAzure Virtual\nMachines	` = 'Azure Blob\nStorage',
+    #       `Microsoft Azure\nFiles` = 'Azure\nFiles',
+    #       `Amazon Elastic\nFile System\n(EFS)` = 'AWS-EFS',
+    #       `Google Cloud\nFilestore` = 'Google\nFilestore'
+    #       
+    #       
+    #     )
+    #   ) 
+
+```
+
+```{r,fig.height=30,fig.width=40}
+
+```
+
+```{r}
+
+
+
+
+
+tools_plot <- function(input_data,
+                       role_title,
+                       n_items = n_items) {
+  
+  n_items = 8
+  programming_languages_summary <-
+  get_summary_data(
+    input_data,
+    role_title,
+    "What programming languages do you use on a regular basis?",
+    n_items = n_items
+  )
+
+databases_summary <-
+  get_summary_data(
+    input_data,
+    role_title,
+    "Do you use any of the following data products (relational databases, data warehouses, data lakes, or similar)?",
+    n_items = n_items
+  )
+
+ides_summary <-
+  get_summary_data(
+    input_data,
+    role_title,
+    "Which of the following integrated development environments (IDE's) do you use on a regular basis?",
+    n_items = n_items
+  )
+
+  programming_languages_summary_plot <-create_power_bars(programming_languages_summary)
+  databases_summary_plot <- create_power_bars(databases_summary, '#f4a261')
+  ides_summary_plot <- create_power_bars(ides_summary, '#2a9d8f')
+  
+  
+  programming_languages_summary_plot + databases_summary_plot + ides_summary_plot
+}
+
+
+cloud_plot <- function(input_data,
+                       role_title,
+                       n_items = 3) {
+
+n_items = 3
+  cloud_platforms_summary <-
+  get_summary_data(
+    input_data,
+    role_title,
+    "Which of the following cloud computing platforms do you use?",
+    n_items = n_items
+  )
+  
+  datastorage_summary <-
+  get_summary_data(
+    input_data,
+    role_title,
+    "Do you use any of the following data storage products?",
+    n_items = n_items
+  )
+
+
+cloud_products_summary <-
+  get_summary_data(
+    input_data,
+    role_title,
+    "Do you use any of the following cloud computing products?",
+    n_items = n_items
+  )
+
+
+datastorage_summary_plot <- create_power_bars(datastorage_summary, '#2a9d8f')
+cloud_platforms_summary_plot <- create_power_bars(cloud_platforms_summary, '#2a9d8f')
+cloud_products_summary_plot <- create_power_bars(cloud_products_summary, '#2a9d8f')
+
+
+datastorage_summary_plot + cloud_platforms_summary_plot + cloud_products_summary_plot
+}
+
+
+
+ml_plot <- function(input_data,
+                       role_title,
+                       n_items = 6) {
+  
+  
+  n_items = 8
+    ml_frameworks_summary <-
+  get_summary_data(
+    input_data,
+    role_title,
+    "Which of the following machine learning frameworks do you use on a regular basis?",
+    n_items = 8
+  )
+
+ml_algorithms_summary <-
+  get_summary_data(
+    input_data,
+    role_title,
+    "Which of the following ML algorithms do you use on a regular basis?",
+    n_items = n_items
+  )
+
+ml_nlp_summary <-
+  get_summary_data(
+    input_data,
+    role_title,
+    "Which of the following natural language processing (NLP) methods do you use on a regular basis?",
+    n_items = n_items
+  )
+ml_nlp_summary <- ml_nlp_summary %>% 
+    mutate(
+      items = recode(
+        items,
+        `Image classification and other general purpose networks (VGG, Inception, ResNet, ResNeXt, NASNet, EfficientNet, etc)` = 'Image classification',
+        `General purpose image/video tools (PIL, cv2, skimage, etc)` = 'General purpose image/video tools',
+        `Object detection methods (YOLOv3, RetinaNet, etc)` = 'Object detection',
+        `Generative Networks (GAN, VAE, etc)` = 'Generative Networks',
+        `Image segmentation methods (U-Net, Mask R-CNN, etc)` = 'Image segmentation methods'
+      )
+    ) 
+
+ml_vision_summary <-
+  get_summary_data(
+    input_data,
+    role_title,
+    "Which categories of computer vision methods do you use on a regular basis?",
+    n_items = n_items
+  )
+  
+ml_vision_summary <-ml_vision_summary%>% 
+    mutate(
+      items = recode(
+        items,
+        `Word embeddings/vectors (GLoVe, fastText, word2vec)` = 'Word embeddings',
+        `Transformer language models (GPT-3, BERT, XLnet, etc)` = 'Transformers',
+        `Encoder-decorder models (seq2seq, vanilla transformers)` = 'Encoder-decorder models',
+        `Contextualized embeddings (ELMo, CoVe)` = 'Contextualized embeddings'
+      )
+    )  
+
+  ml_frameworks_summary_plot <-create_power_bars(ml_frameworks_summary)
+  ml_algorithms_summary_plot <- create_power_bars(ml_algorithms_summary, '#f4a261')
+  ml_nlp_summary_plot <- create_power_bars(ml_nlp_summary, '#2a9d8f')
+  ml_vision_summary_plot <- create_power_bars(ml_vision_summary, '#2a9d8f')
+  
+  ml_frameworks_summary_plot + ml_algorithms_summary_plot + ml_vision_summary_plot + patchwork::plot_layout(nrow = 1)
+  
+
+}
+
+
+
+
+
+
+
+
+
+
+
+visualization_plot <- function(input_data,
+                       role_title,
+                       n_items = 6) {
+  
+  
+  
+    visualization_summary <-
+  get_summary_data(
+    input_data,
+    role_title,
+    "Do you use any of the following data visualization libraries on a regular basis?",
+    n_items = n_items
+  )
+
+bi_summary <-
+  get_summary_data(
+    input_data,
+    role_title,
+    "Do you use any of the following business intelligence tools?",
+    n_items = n_items
+  )
+
+
+
+  visualization_summary_plot <- create_power_bars(visualization_summary, '#2a9d8f')
+  bi_summary_plot <- create_power_bars(bi_summary, '#2a9d8f')
+  
+  visualization_summary_plot + bi_summary_plot 
+  
+
+}
+
+
+
+
+```
+
+```{r}
+ml_vision_summary
+```
+
+Programming
+
+ML
+
+```{r}
+
+Which of the following ML algorithms do you use on a regular basis?
+"Which of the following machine learning frameworks do you use on a regular basis?"
+"Which of the following natural language processing (NLP) methods do you use on a regular basis?"
+"Which categories of computer vision methods do you use on a regular basis?"
+"Do you use any tools to help monitor your machine learning models and/or experiments?"
+"Do you use any of the following products to serve your machine learning models?"
+```
+
+```{r}
+"Do you use any of the following responsible or ethical AI products in your machine learning practices?"
+
+"Do you use any of the following automated machine learning tools?"
+"Do you use any of the following types of specialized hardware when training machine learning models?"
+```
+
+Data Products
+
+```{r}
+
+"Which of the following cloud computing platforms do you use?"
+"Do you use any of the following data storage products?"
+"Do you use any of the following data products (relational databases, data warehouses, data lakes, or similar)?" 
+
+"Do you use any of the following data storage products?" 
+```
+
+Viz
+
+```{r}
+"Do you use any of the following data visualization libraries on a regular basis?"
+"Do you use any of the following business intelligence tools?"
+```
+
+Group/anjoman
+
+```{r}
+"Who/what are your favorite media sources that report on data science topics?"
+```
+
+```{r}
+  vis_data_programming_languages <-
+    get_summary_data(
+      input_data,
+      role_title,
+      "What programming languages do you use on a regular basis?",
+      n_items = 16,
+      items_vector = programming_languages
+    )
+  
+  vis_data_databases <-
+    get_summary_data(
+      input_data,
+      role_title,
+      "Do you use any of the following data products (relational databases, data warehouses, data lakes, or similar)?",
+      n_items = 6
+    )
+  
+  vis_data_ml_algorithm <-
+    get_summary_data(
+      input_data,
+      role_title,
+      "Which of the following ML algorithms do you use on a regular basis?",
+      n_items = 6,
+      items_vector = ml_algorithms,
+      #filter_ratio = 0
+    ) %>%   mutate(
+      items = recode(
+        items,
+        `Dense Neural Networks (MLPs, etc)` = 'Dense Neural Networks',
+        `Gradient Boosting Machines (xgboost, lightgbm, etc)` = 'Gradient Boosting Machines',
+        `Transformer Networks (BERT, gpt-3, etc)` = 'Transformer Networks'
+      )
+    )
+  
+  
+  vis_data_mlframework <-
+    get_summary_data(
+      input_data,
+      role_title,
+      'Which of the following machine learning frameworks do you use on a regular basis?',
+      n_items = 6
+    )
+  
+  
+  vis_data_ide <-
+    get_summary_data(input_data,
+                     role_title,
+                     'Which of the following integrated development environments',
+                     'IDE',
+                     filter_ratio = 0.0)
+  
+  
+  vis_data_vis <-
+    get_summary_data(
+      input_data,
+      role_title,
+      'Do you use any of the following data visualization libraries on a regular basis?',
+      items_vector = vis_libraries
+    ) %>%
+    mutate(items = recode(
+      items,
+      `Ggplot / ggplot2` = 'ggplot2',
+      `Plotly / Plotly Express` = 'Plotly'
+    ))
+  
+  
+  vis_data_bi <- get_summary_data(
+    input_data,
+    role_title,
+    'Do you use any of the following business intelligence tools?',
+    n_items = 4
+  )
+  
+  
+  
+  
+  vis_data_cv_alg <-  get_summary_data(
+    input_data,
+    role_title,
+    'Which categories of computer vision methods do you use on a regular basis?',
+    n_items = 4
+  ) %>% 
+    mutate(
+      items = recode(
+        items,
+        `Image classification and other general purpose networks (VGG, Inception, ResNet, ResNeXt, NASNet, EfficientNet, etc)` = 'Image classification',
+        `General purpose image/video tools (PIL, cv2, skimage, etc)` = 'General purpose image/video tools',
+        `Object detection methods (YOLOv3, RetinaNet, etc)` = 'Object detection',
+        `Generative Networks (GAN, VAE, etc)` = 'Generative Networks',
+        `Image segmentation methods (U-Net, Mask R-CNN, etc)` = 'Image segmentation methods'
+      )
+    ) 
+  
+  
+  
+  vis_data_nlp_alg <-
+    get_summary_data(
+      input_data,
+      role_title,
+      'Which of the following natural language processing (NLP) methods do you use on a regular basis?'
+    ) %>%
+    
+    mutate(
+      items = recode(
+        items,
+        `Word embeddings/vectors (GLoVe, fastText, word2vec)` = 'Word embeddings',
+        `Transformer language models (GPT-3, BERT, XLnet, etc)` = 'Transformers',
+        `Encoder-decorder models (seq2seq, vanilla transformers)` = 'Encoder-decorder models',
+        `Contextualized embeddings (ELMo, CoVe)` = 'Contextualized embeddings'
+      )
+    )  
+  
+  
+  vis_data_cloud <-
+    get_summary_data(
+      input_data,
+      role_title,
+      'Which of the following cloud computing platforms do you use?',
+      n_items = 4,
+      filter_ratio = 0
+    )
+
+  
+  
+  
+  vis_data_cloud_storage <-
+    get_summary_data(input_data,
+                     role_title,
+                     'Do you use any of the following data storage products?',
+                     n_items = 4)
+
+  vis_data_manager_ml <-
+    get_summary_data(
+      input_data,
+      role_title,
+      'Do you use any of the following managed machine learning products on a regular basis?',
+      n_items = 4
+    ) 
+```

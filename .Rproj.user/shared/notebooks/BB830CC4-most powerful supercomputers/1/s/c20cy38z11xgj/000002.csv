@@ -1,0 +1,75 @@
+"0","```r
+
+
+breaks <- c(0, 20, 50, 150, 300, 800)
+supercomputers_counts <- supercomputers %>%
+  count(country, sort = TRUE) %>%
+  mutate(
+    country = if_else(country == \"United States\", \"United States of America\", country),
+    country = if_else(country == \"Czechia\", \"Czech Republic\", country)
+  )
+
+supercomputers_counts %>%
+  filter(!country %in% world$sovereignt)
+world %>%
+  st_transform(3395) %>%
+  left_join(supercomputers_counts, by = c(\"sovereignt\" = \"country\")) %>%
+  filter(continent != \"Antarctica\") %>%
+  ggplot() +
+  geom_sf(aes(geometry = geometry, fill = n), color = \"grey95\", size = 0.1) +
+  #       scale_fill_gradientn(colors = c('#ffccd5','#ffb3c1',
+  #                                       '#ff8fa3','#ff758f','#ff758f',
+  #                                       '#ff4d6d','#c9184a', '#a4133c',
+  #                                       '#800f2f'),na.value = '#fff0f3',
+  #                                breaks = c(0,5,10,20,30,40,50,100,140,180))  +
+  #
+  # # scale_fill_stepsn(colors = c('#ffccd5','#ffb3c1',
+  #  #                                     '#ff8fa3','#ff758f','#ff758f',
+  #  #                                     '#ff4d6d','#c9184a', '#a4133c',
+  #   #                                    '#800f2f'), breaks = breaks)
+  #
+  #  #rcartocolor::
+  #    guides(fill = guide_legend(title.position = \"top\",
+  #                                 title.hjust = 0.5, nrow = 1,
+  #                               label.position = \"bottom\",
+  #                                override.aes = list(size = 5),
+  #                                reverse = T)) +
+#stat_sf_coordinates(aes(size = n)) +  
+rcartocolor::scale_fill_carto_c(
+    palette = \"BluYl\",
+    direction = -1,
+    name = \"\n\nShare of Deaths\",
+    limits = c(1, 180), ## max percent overall
+    breaks = seq(0, 180, 20),
+    labels = glue::glue(\"{seq(1, 180, by = 20)}%\")
+  ) +
+  guides(fill = guide_colorbar(
+    barheight = unit(2.3, units = \"mm\"),
+    barwidth = unit(100, units = \"mm\"),
+    direction = \"horizontal\",
+    ticks.colour = \"grey20\",
+    title.position = \"top\",
+    label.position = \"top\",
+    title.hjust = 0.5
+  )) +
+  # guides(fill = guide_bins(axis = FALSE))+#guide_colourbar(nbin = 100, draw.ulim = FALSE, draw.llim = FALSE)) +
+  theme_void() +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(
+    text = element_text(family = \"VT323\", hjust = 0.5),
+    plot.title = element_text(family = \"VT323\"),
+    plot.caption = element_text(
+      family = \"Oswald\",
+      size = 10,
+      color = \"grey70\",
+      face = \"bold\",
+      hjust = 0.5,
+      margin = margin(t = -15, b = 10)
+    ),
+    legend.position = c(0.5, 0.15),
+    legend.key.height = unit(0.5, \"lines\"),
+    legend.key.width = unit(.5, \"lines\"),
+    plot.background = element_rect(fill = \"#B8CCCC\", color = NA)
+  )
+```"

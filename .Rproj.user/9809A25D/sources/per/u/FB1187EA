@@ -1,0 +1,33 @@
+{
+    "id": "FB1187EA",
+    "path": null,
+    "project_path": null,
+    "type": "r_markdown",
+    "hash": "2351701283",
+    "contents": "",
+    "dirty": true,
+    "created": 1668112159580.0,
+    "source_on_save": false,
+    "relative_order": 5,
+    "properties": {
+        "rmdVisualMode": "true",
+        "rmdVisualWrapConfigured": "true",
+        "tempName": "Untitled2",
+        "chunk_output_type": "inline",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "68,0",
+        "scrollLine": "0",
+        "docOutlineVisible": "1",
+        "rmdVisualModeLocation": "1485:11771",
+        "rmdVisualCollapsedChunks": ""
+    },
+    "folds": "",
+    "lastKnownWriteTime": 13511030816899171,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1668706373750,
+    "read_only": false,
+    "read_only_alternatives": []
+}
